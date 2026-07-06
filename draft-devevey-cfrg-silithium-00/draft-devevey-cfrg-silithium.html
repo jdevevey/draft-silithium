@@ -1,0 +1,2396 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>Silithium - A Compact, Efficient and Non-separable Hybrid Signature</title>
+<meta content="Julien Devevey" name="author">
+<meta content="Maxime Roméas" name="author">
+<meta content="Morgane Guerreau" name="author">
+<meta content="
+       This document defines Silithium, an augmentation of US NIST Module-Lattice-based Digital Signing Algorithm (ML-DSA)   with traditional elliptic-curve operations, that uses ML-DSA in a black-box manner.
+This results in a digital signature scheme with hybrid security, requiring solving hard lattice problems as well as discrete logarithm in order to forge a signature.
+This augmentation is designed to satisfy regulatory guidelines in certain regions.
+Silithium is strongly unforgeable as long as ML-DSA is.
+Morevoer, Silithium can be used in a backward compatible and interopable manner without hindering security. 
+    " name="description">
+<meta content="xml2rfc 3.34.0" name="generator">
+<meta content="post-quantum" name="keyword">
+<meta content="cryptography" name="keyword">
+<meta content="hybridization" name="keyword">
+<meta content="signature" name="keyword">
+<meta content="draft-devevey-cfrg-silithium-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.34.0
+    Python 3.14.5
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.10.0
+    pycountry 24.6.1
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.8.2
+-->
+<link href="draft-devevey-cfrg-silithium.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1 {
+  &#title {
+    font-size: 32px;
+    line-height: 40px;
+    clear: both;
+    margin: 1.5em 0 0.2em;
+  }
+  &#rfcnum {
+    margin: 1.5em 0 0.2em;
+    & + h1#title {
+      margin: 0.2em 0;
+    }
+  }
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+  & code, & samp, & tt {
+    font-size: 16px;
+    line-height: 0;
+  }
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight {
+  margin: 1em 0;
+  &.art-text {
+    background-color: var(--highlight-color);
+    border: 1px solid var(--line-color);
+    border-radius: 3px;
+    padding: 0.5em 1em 0;
+    margin-bottom: 0.5em;
+    & pre {
+      padding: 0;
+      width: auto;
+    }
+  }
+  & > *:first-child {
+    border: none;
+    margin: 0;
+    float: right;
+    clear: both;
+  }
+  & > *:nth-child(2) {
+    clear: both;
+    display: block;
+    border: none;
+  }
+}
+svg {
+  display: block;
+  /* font-family isn't space-separated, but =~ will have to do */
+  &[font-family~="monospace" i], & [font-family~="monospace" i] {
+    font-family: var(--font-mono);
+  }
+}
+.alignCenter {
+  margin: 1em 0;
+  &.art-text {
+    background-color: var(--highlight-color);
+    border: 1px solid var(--line-color);
+    border-radius: 3px;
+    padding: 0.5em 1em 0;
+    margin-bottom: 0.5em;
+    & pre {
+      padding: 0;
+      width: auto;
+    }
+  }
+  & > *:first-child {
+    border: none;
+    /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+       support flexbox yet.
+    */
+    display: table;
+    margin: 0 auto;
+  }
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+      float: none;
+    }
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+
+  &:not(.dlNewline) > dt {
+    float: left;
+    margin-right: 2ch;
+    min-width: 8ch;
+  }
+  & > dd {
+    margin-bottom: .8em;
+    margin-left: var(--indent) !important; /* stupid element overrides */
+    min-height: 2ex;
+  }
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a {
+  text-decoration: none;
+  &[href] {
+    color: var(--link-color);
+    &:hover { text-decoration: underline; }
+    &.selfRef {
+      color: var(--text-color);
+      &:hover {
+        text-decoration: none;
+        background-color: var(--highlight-color);
+      }
+    }
+  }
+}
+.iref + a[href].internal {
+  color: var(--text-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+  & blockquote {
+    margin: 0.8em 0.4em 0.4em;
+  }
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) {
+    & p {
+      margin: -2px 0;
+      max-height: 0;
+      transition: max-height 2s ease, margin 0.5s ease 0.5s;
+      overflow: hidden;
+    }
+    &:hover p,
+    & h2:target ~ p {
+      margin: 0.5em 0;
+      max-height: 500px;
+      overflow: auto;
+    }
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+  border-left: 2px var(--pilcrow-strong) solid;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  &.right { margin-left: auto; }
+  &.center { margin-left: auto; margin-right: auto; }
+  &.left { margin-right: auto; }
+  & .text-left { text-align: left; }
+  & .text-center { text-align: center; }
+  & .text-right { text-align: right; }
+  & caption {
+    margin: 0;
+    padding: 3px 0 3px 1em;
+  }
+  & p { margin: 0; }
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+  @media not print {
+    :hover > &, &:focus {
+      opacity: 1;
+    }
+    &[href]:hover {
+      color: var(--pilcrow-strong);
+      background-color: transparent;
+    }
+  }
+  @media print {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+  & .prepared {
+    float: right;
+  }
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses {
+    & > section {
+      column-count: 2;
+      column-gap: 20px;
+    }
+    & > section > h2 {
+      column-span: all;
+    }
+    /* hack for break-inside: avoid-column */
+    & address {
+      display: inline-block;
+      break-inside: avoid-column;
+    }
+  }
+}
+
+/* Comments */
+.rfcEditorRemove {
+  & p:first-of-type {
+    font-style: italic;
+  }
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc {
+    & nav {
+      font-family: var(--font-title);
+      font-weight: 360;
+      & > ul { margin-bottom: 2em; }
+      & ul {
+        margin: 0 0 0 4px;
+        & :is(p, li) {
+          margin: 2px 0;
+        }
+      }
+    }
+    & a.toplink {
+      float: right;
+    }
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+    & h2 {
+      margin: 0;
+      padding: 2px 0 2px 6px;
+      padding-right: 1em;
+      font-size: 18px;
+      line-height: 24px;
+      min-width: 190px;
+      text-align: right;
+      background-color: #444;
+      color: white;
+      cursor: pointer;
+      &::before { /* css hamburger */
+        float: right;
+        position: relative;
+        width: 1em;
+        height: 1px;
+        left: -164px;
+        margin: 8px 0 0 0;
+        background: white none repeat scroll 0 0;
+        box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+        content: "";
+      }
+    }
+    & nav {
+      display: none;
+      background-color: var(--background-color);
+      padding: 0.5em 1em 1em;
+      overflow: auto;
+      overscroll-behavior: contain;
+      height: calc(100vh - 48px);
+      border-left: 1px solid #ddd;
+    }
+    &.active {
+      opacity: 1;
+      & nav { display: block; }
+    }
+    /* Make the collapsed ToC header render white on gray also when it's a link */
+    & h2 a,
+    & h2 a:is(:link, :focus, :hover),
+    & a.toplink,
+    & a.toplink:hover {
+      color: white;
+      background-color: #444;
+      text-decoration: none;
+    }
+    & a.toplink {
+      margin: 2px 0.5em 0;
+    }
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+    & h2 {
+      margin: 0;
+      padding: 0.25em 1em 1em 0;
+    }
+    & nav {
+      display: block;
+      height: calc(90vh - 84px);
+      bottom: 0;
+      padding: 0.5em 0 2em;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+    & a.toplink {
+      margin: 8px 0.5em 0;
+    }
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc {
+    page-break-before: always;
+    border-top: none;
+    padding-top: 0;
+  }
+  #n-introduction {
+    page-break-before: always;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg {
+  & :is([stroke="black"], [stroke^="#000"]) {
+    stroke: var(--text-color);
+  }
+  & :is([stroke="white"], [stroke^="#fff"]) {
+    stroke: var(--background-color);
+  }
+  & :is([fill="black"], [fill^="#000"], :not([fill])) {
+    fill: var(--text-color);
+  }
+  & :is([fill="white"], [fill^="#fff"]) {
+    fill: var(--background-color);
+  }
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">Silithium</td>
+<td class="right">July 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Devevey, et al.</td>
+<td class="center">Expires 7 January 2027</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">CFRG</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-devevey-cfrg-silithium-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-07-06" class="published">6 July 2026</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2027-01-07">7 January 2027</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">J. Devevey</div>
+<div class="org">ANSSI</div>
+</div>
+<div class="author">
+      <div class="author-name">M. Roméas</div>
+<div class="org">ANSSI</div>
+</div>
+<div class="author">
+      <div class="author-name">M. Guerreau</div>
+<div class="org">PQShield</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">Silithium - A Compact, Efficient and Non-separable Hybrid Signature</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines Silithium, an augmentation of US NIST Module-Lattice-based Digital Signing Algorithm (ML-DSA) <span>[<a href="#FIPS.204" class="cite xref">FIPS.204</a>]</span> with traditional elliptic-curve operations, that uses ML-DSA in a black-box manner.
+This results in a digital signature scheme with hybrid security, requiring solving hard lattice problems as well as discrete logarithm in order to forge a signature.
+This augmentation is designed to satisfy regulatory guidelines in certain regions.
+Silithium is strongly unforgeable as long as ML-DSA is.
+Morevoer, Silithium can be used in a backward compatible and interopable manner without hindering security.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note rfcEditorRemove" id="section-note.1">
+      <h2 id="name-about-this-document">
+<a href="#name-about-this-document" class="section-name selfRef">About This Document</a>
+      </h2>
+<p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">
+        Status information for this document may be found at <span><a href="https://datatracker.ietf.org/doc/draft-devevey-cfrg-silithium/">https://datatracker.ietf.org/doc/draft-devevey-cfrg-silithium/</a></span>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+<p id="section-note.1-3">
+        Discussion of this document takes place on the
+        Cryptography Forum Research Group mailing list (<span><a href="mailto:cfrg@ietf.org">mailto:cfrg@ietf.org</a></span>),
+        which is archived at <span><a href="https://mailarchive.ietf.org/arch/browse/cfrg/">https://mailarchive.ietf.org/arch/browse/cfrg/</a></span>.
+        Subscribe at <span><a href="https://www.ietf.org/mailman/listinfo/cfrg/">https://www.ietf.org/mailman/listinfo/cfrg/</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
+<p id="section-note.1-4">Source for this draft and an issue tracker can be found at
+        <span><a href="https://github.com/jdevevey/draft-silithium">https://github.com/jdevevey/draft-silithium</a></span>.<a href="#section-note.1-4" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 7 January 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-hybrid-cryptography" class="internal xref">Hybrid cryptography</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-silithium" class="internal xref">Silithium</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-notations" class="internal xref">Notations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-scheme-description" class="internal xref">Scheme Description</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-key-generation" class="internal xref">Key Generation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-sign" class="internal xref">Sign</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-verify" class="internal xref">Verify</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-serialization" class="internal xref">Serialization</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-curve-point-encoding" class="internal xref">Curve Point encoding</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-serializepublickey-and-dese" class="internal xref">SerializePublicKey and DeserializePublicKey</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-serializeprivatekey-and-des" class="internal xref">SerializePrivateKey and DeserializePrivateKey</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-serializesignaturevalue-and" class="internal xref">SerializeSignatureValue and DeserializeSignatureValue</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-serializecommitment" class="internal xref">SerializeCommitment</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-algorithm-identifiers-and-p" class="internal xref">Algorithm Identifiers and Parameters</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-changes-with-respect-to-the" class="internal xref">Changes with respect to the published version of Silithium</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-unforgeability" class="internal xref">Unforgeability</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-strong-unforgeability" class="internal xref">Strong Unforgeability</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.4">
+                <p id="section-toc.1-1.6.2.4.1"><a href="#section-6.4" class="auto internal xref">6.4</a>.  <a href="#name-backward-compatibility-mode" class="internal xref">Backward compatibility mode with ECDSA</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.5">
+                <p id="section-toc.1-1.6.2.5.1"><a href="#section-6.5" class="auto internal xref">6.5</a>.  <a href="#name-interoperability-mode-with-" class="internal xref">Interoperability mode with ML-DSA</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-potential-changes" class="internal xref">Potential Changes</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-append-r-to-the-message" class="internal xref">Append R to the message</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-user-defined-context-string" class="internal xref">User-defined context string</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-silithium-dgr" class="internal xref">Silithium-DGR</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-implementation-consideratio" class="internal xref">Implementation considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-silithium-and-components-si" class="internal xref">Silithium and Components Sizes</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-component-algorithm-referen" class="internal xref">Component Algorithm Reference</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Quantum computing poses new challenges to cryptography, as traditional signature algorithms, such as RSA or ECDSA, are vulnerable to quantum attacks.
+Fortunately, new cryptographic standards, such as ML-DSA, recently became available and are assumed to be resistant to such attacks.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This leaves the community in a situation where some standards are widely deployed, remain secure for now, but will be broken some time in the future,
+while on the other hand other standards are only at the beginning of their deployment.
+For the latter, even if the mathematical problems underlying their security are starting to be well understood, many other security issues may arise due to the lack of time to fully harden their implementation, or even find all the bugs they may contain.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<div id="hybrid-cryptography">
+<section id="section-1.1">
+        <h3 id="name-hybrid-cryptography">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-hybrid-cryptography" class="section-name selfRef">Hybrid cryptography</a>
+        </h3>
+<p id="section-1.1-1">Due to the recent nature of post-quantum cryptography and especially post-quantum standards, several European cybersecurity agencies <span>[<a href="#ANSSI2024" class="cite xref">ANSSI2024</a>]</span> are recommending to hybridize these new standards with traditional cryptography, resulting in PQ/T hybrids.
+These hybrids must be resistant to both classical and quantum attacks, ensuring security as high as the maximum security between post-quantum and traditional cryptography.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">Hybridization for signature scheme must be tackled carefully. The role played by signatures in modern protocols and their induced complexity is reinforced by the intrinsic complexity of hybridization. One particular notion that is not covered by the standard unforgeability (EU-CMA) or strong unfogeability (sEU-CMA) security notions for signatures is the reuse of keys between the hybrid signature scheme and its components. In this setting, which should be avoided in general but could also be necessary in some applications for backward compatibility or interoperability reasons, it must not be possible to break down the hybrid signature scheme into its traditional and post-quantum components, and vice-versa.
+Previous works have covered this topic and defined guidelines and desirable notions for hybrid signature schemes <span>[<a href="#I-D.draft-ietf-pquip-hybrid-signature-spectrums-07" class="cite xref">I-D.draft-ietf-pquip-hybrid-signature-spectrums-07</a>]</span>.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="silithium">
+<section id="section-1.2">
+        <h3 id="name-silithium">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-silithium" class="section-name selfRef">Silithium</a>
+        </h3>
+<p id="section-1.2-1">Silithium is a particular instantiation of the hybrid signature framework described in <span>[<a href="#DGR26" class="cite xref">DGR26</a>]</span>.
+This paper introduces a new security notion called (s)H-EU-CMA which captures the well known notions of (strong) unforgeability and apply them to PQ/T hybrid schemes. In particular, this grants strong non-separability to the resulting scheme, and this removes the security issues that may arise when private key material of one component is reused outside the PQ/T scheme. See <a href="#sec-considerations" class="auto internal xref">Section 6</a> for more details on the security properties.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<p id="section-1.2-2">As described in <span>[<a href="#DGR26" class="cite xref">DGR26</a>]</span>, Silithium is a PQ/T hybrid construction building on ML-DSA and EC-Schnorr (also called EC-SDSA).
+While we assume that the developer will have access to an ML-DSA implementation, we do not make such assumption for EC-Schnorr, as this scheme is less widely used. However, we expect that a general purpose elliptic curve library is likely to be available. For this reason, in <a href="#scheme-description" class="auto internal xref">Section 3</a> we describe directly the elliptic curve operations rather than relying on the high-level description of EC-Schnorr like in <span>[<a href="#DGR26" class="cite xref">DGR26</a>]</span>.<a href="#section-1.2-2" class="pilcrow">¶</a></p>
+<p id="section-1.2-3">Silithium is designed with the goal of lessening the implementation burden. Assuming elliptic curve addition and multiplication as well as ML-DSA are available, then it can quickly be implemented: signing requires in essence sampling a curve point, signing with ML-DSA and computing one multiplication and one addition modulo the order of the curve.<a href="#section-1.2-3" class="pilcrow">¶</a></p>
+<p id="section-1.2-4">Silithium offers existential unforgeability (EU-CMA) under hybrid assumptions, i.e. either elliptic curve discrete logarithm or lattice problems are hard, as well as strong existential unforgeability (sEU-CMA) under the assumption that lattice problems are hard, making it fit for most applications.
+It also offers various notions of non-separability (and other beyond unforgeability features), making it resilient to uses (and sometimes missuses) where hybrid keys are split and reused inside their component signature schemes, which could be useful for backward compatibility or interopability reasons.<a href="#section-1.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-2">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-2-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+"<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">This specification is consistent with the terminology defined in <span>[<a href="#RFC9794" class="cite xref">RFC9794</a>]</span>.
+Some relevant definitions from <span>[<a href="#RFC9794" class="cite xref">RFC9794</a>]</span> are copied here for easier reading.
+In addition, the following terminology is used throughout this specification:<a href="#section-2-2" class="pilcrow">¶</a></p>
+<p id="section-2-3"><strong>ALGORITHM</strong>:
+  The usage of the term "algorithm" within this
+  specification generally refers to any function which
+  has a registered Object Identifier (OID) for
+  use within an ASN.1 AlgorithmIdentifier.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<p id="section-2-4"><strong>POST-QUANTUM TRADITIONAL (PQ/T) HYBRID SCHEME</strong>:
+  <span>[<a href="#RFC9794" class="cite xref">RFC9794</a>]</span> defines a PQ/T Hybrid Scheme as:
+  A multi-algorithm scheme where at least one component algorithm
+  is a post-quantum algorithm and at least one is a traditional algorithm.<a href="#section-2-4" class="pilcrow">¶</a></p>
+<p id="section-2-5"><strong>SIGNATURE</strong>:
+          A digital cryptographic signature, making no assumptions
+            about which algorithm.<a href="#section-2-5" class="pilcrow">¶</a></p>
+<p id="section-2-6"><strong>BACKWARD COMPATIBILITY</strong>:
+  A PQ/T hybrid scheme is used in backward compatibility mode if the traditional component of its keypair
+  is simultaneously used in a traditional algorithm.<a href="#section-2-6" class="pilcrow">¶</a></p>
+<p id="section-2-7"><strong>INTEROPERABILITY</strong>:
+  A PQ/T hybrid scheme is used in interoperability mode if the post-quantum component of its keypair
+  is simultaneously used in a post-quantum algorithm.<a href="#section-2-7" class="pilcrow">¶</a></p>
+<div id="notations">
+<section id="section-2.1">
+        <h3 id="name-notations">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-notations" class="section-name selfRef">Notations</a>
+        </h3>
+<p id="section-2.1-1">The algorithm descriptions use python-like syntax. The following symbols deserve special mention:<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.1-2.1">
+            <p id="section-2.1-2.1.1"><code>||</code> represents concatenation of two byte-arrays.<a href="#section-2.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-2.2">
+            <p id="section-2.1-2.2.1"><code>[:]</code> represents byte array slicing.<a href="#section-2.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-2.3">
+            <p id="section-2.1-2.3.1"><code>(a, b)</code> represents a pair of values <code>a</code> and <code>b</code>. Typically, this indicates that a function returns multiple values; the exact conveyance mechanism -- tuple, struct, output parameters, etc. -- is left to the implementer.<a href="#section-2.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-2.4">
+            <p id="section-2.1-2.4.1"><code>(a, _)</code>: represents a pair of values where one -- the second one in this case -- is ignored.<a href="#section-2.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-2.5">
+            <p id="section-2.1-2.5.1"><code>func(a) -&gt; b</code>: represents a function named <code>func</code> that takes <code>a</code> as input and produces <code>b</code>.<a href="#section-2.1-2.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-2.6">
+            <p id="section-2.1-2.6.1"><code>Func&lt;TYPE&gt;()</code>: represents a function that is parameterized by <code>&lt;TYPE&gt;</code> meaning that the function's implementation will have minor differences depending on the underlying TYPE. Typically this means that a function will need to look up different constants or use different underlying cryptographic primitives depending on which composite algorithm it is implementing.<a href="#section-2.1-2.6.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.1-3">For the purpose of describing the elliptic curve operations, the following notation is used throughout the document:<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.1-4">
+<pre>
+q           Order of the group
+
+G           Generator of the group
+
+[n]P        P added to itself n times
+</pre><a href="#section-2.1-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="scheme-description">
+<section id="section-3">
+      <h2 id="name-scheme-description">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-scheme-description" class="section-name selfRef">Scheme Description</a>
+      </h2>
+<p id="section-3-1">This section describes the Silithium functions needed to instantiate the public API of a digital signature scheme.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="key-generation">
+<section id="section-3.1">
+        <h3 id="name-key-generation">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-key-generation" class="section-name selfRef">Key Generation</a>
+        </h3>
+<p id="section-3.1-1">The security properties guaranteed by Silithium do not forbid key material generated for Silithium to be reused outside of Silithium (and conversely). See <a href="#sec-considerations" class="auto internal xref">Section 6</a> for further discussion on security properties. In this document, we describe the generation of fresh key material.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">To generate a new key pair for Silithium, the <code>KeyGen() -&gt; (pk, sk)</code> function is used.  The <code>KeyGen()</code> function calls independently the key generation algorithm of ML-DSA, and the <code>RandomPoint</code> function that outputs <code>(d, P)</code> such that <code>P = [d]G</code>. Multi-threaded, multi-process, or multi-module applications might choose to execute the key generation functions in parallel for better key generation performance or architectural modularity.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">The following describes how to instantiate a <code>KeyGen()</code> function for a given variant of Silithium represented by <code>&lt;OID&gt;</code>.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.1-4">
+<pre>
+Silithium-&lt;OID&gt;.KeyGen() -&gt; (pk, sk)
+
+Explicit inputs:
+
+  None
+
+Implicit inputs mapped from &lt;OID&gt;:
+
+  ML-DSA  The underlying ML-DSA algorithm and parameter set,
+          for instance "ML-DSA-65".
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  (pk, sk)    A Silithium keypair.
+
+Key generation process:
+
+  1. Generate component keys
+
+    mldsaSeed = Random(32)
+    (mldsaPK, mldsaSK) = ML-DSA.KeyGen_internal(mldsaSeed)
+    (d, P) = Curve.RandomPoint()
+
+  2. Check for component key generation failure
+
+    if NOT (mldsaPK, mldsaSK) or NOT (d, P):
+      output "Key generation error"
+
+  3. Output the Silithium public and private keys
+
+    pk = SerializePublicKey(mldsaPK, P)
+    sk = SerializePrivateKey(mldsaSeed, d)
+</pre><a href="#section-3.1-4" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1-5">This keygen process makes use of the seed-based <code>ML-DSA.KeyGen_internal(𝜉)</code>, which is defined in Algorithm 6 of <span>[<a href="#FIPS.204" class="cite xref">FIPS.204</a>]</span>.
+If private key interoperability is not required, it is possible to deviate from <a href="#serialize-privkey" class="auto internal xref">Section 4.3</a> and store the ML-DSA private key as an expanded private key, allowing the use of <code>ML-DSA.KeyGen()</code> (Algorithm 1 of <span>[<a href="#FIPS.204" class="cite xref">FIPS.204</a>]</span>).<a href="#section-3.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sign">
+<section id="section-3.2">
+        <h3 id="name-sign">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-sign" class="section-name selfRef">Sign</a>
+        </h3>
+<p id="section-3.2-1">The <code>Sign()</code> algorithm of Silithium opens up the signature procedure of EC-Schnorr to integrate a call to <code>ML-DSA.Sign()</code>. The rough idea is that the challenge of EC-Schnorr is no longer computed with a hash function, but is rather extracted from an ML-DSA signature. To further bind the two components together, the random nonce <code>R</code> (a point on the Curve) is passed to ML-DSA as a context string, along with the EC-Schnorr public key.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.2-2">
+<pre>
+Silithium-&lt;OID&gt;.Sign(sk, M) -&gt; s
+
+Explicit inputs:
+
+  sk      Silithium private key consisting of signing private keys
+          for each component.
+
+  M       The message to be signed, an octet string.
+
+Implicit inputs mapped from &lt;OID&gt;:
+
+  ML-DSA  The underlying ML-DSA algorithm and parameter set,
+          for instance "ML-DSA-65".
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  s    The Silithium signature value.
+
+Signature Generation Process:
+
+  1. Deserialize the private key and recompute the public point
+
+    (mldsaSeed, d) = DeserializePrivateKey(sk)
+    (_, mldsaSK) = ML-DSA.KeyGen_internal(mldsaSeed)
+    P = [d]G
+
+  2. Generate a random scalar k in the range ]0, q[
+
+    k = RandScalar(0, q)
+
+  3. Compute the random nonce
+
+    R = [k]G
+
+  4. Serialize R and the EC-Schnorr public key as an octet string
+
+    ctx = SerializeCommitment(R, P)
+
+  5. Sign the message with ML-DSA and extract the challenge component
+
+    mldsaSig = ML-DSA.Sign(mldsaSK, M, ctx)
+    c = mldsaSig[:c_len]
+
+  6. Complete the EC-Schnorr signature procedure
+
+    x = k + ecSK * c mod q
+
+  7. Serialize and output the Silithium signature
+
+    s = SerializeSignatureValue(mldsaSig, x)
+</pre><a href="#section-3.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-3.2-3">Note that in step 4, both <code>R</code> and the EC-Schnorr public key are at most 66 bytes (in compressed form), hence their serialization fits under the maximum size of 255 bytes for ML-DSA context string. Silithium does not take any context string as an input and does not allow user-defined context string to be transmitted to ML-DSA. See <a href="#user-context" class="auto internal xref">Section 7.2</a> for a discussion on user-defined context string.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="verify">
+<section id="section-3.3">
+        <h3 id="name-verify">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-verify" class="section-name selfRef">Verify</a>
+        </h3>
+<p id="section-3.3-1">The <code>Verify()</code> algorithm recomputes the context string from the EC-Schnorr components <code>(x, c)</code> and the EC-Schnorr public key. Validating the ML-DSA signature with such context string implicitly validates the EC-Schnorr signature. It is not possible to abort early from the signature verification, ensuring the Simultaneous Verification property (further discussion in <a href="#sec-considerations" class="auto internal xref">Section 6</a>).<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.3-2">
+<pre>
+Silithium-&lt;OID&gt;.Verify(pk, M, s) -&gt; true or false
+
+Explicit inputs:
+
+  pk      Silithium public key consisting of verification public keys
+          for each component.
+
+  M       Message whose signature is to be verified, an octet string.
+
+  s       A Silithium signature value to be verified.
+
+Implicit inputs mapped from &lt;OID&gt;:
+
+  ML-DSA  The underlying ML-DSA algorithm and parameter set,
+          for instance "ML-DSA-65".
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  Validity (bool)   True if the Silithium signature is valid, false
+                    otherwise.
+
+Signature Verification Process:
+
+  1. Deserialize the public key
+
+    (mldsaPK, P) = DeserializePublicKey(pk)
+
+  2. Deserialize the signature and extract components. Both c and x
+    are interpreted as scalars.
+
+    (c, x, mldsaSig) = DeserializeSignatureValue(s)
+
+  3. Ensure that x is within the bounds
+
+    if (x &lt; 0 or x &gt;= q)
+      return error
+
+  4. Recompute the nonce R
+
+    R = [x]G - [c]P
+
+  5. Serialize R and the EC-Schnorr public key as an octet string
+
+    ctx = SerializeCommitment(R, P)
+
+  6. Output the result of ML-DSA verification
+
+    return ML-DSA.Verify(mldsaPK, M, mldsaSig, ctx)
+</pre><a href="#section-3.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="serialization">
+<section id="section-4">
+      <h2 id="name-serialization">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-serialization" class="section-name selfRef">Serialization</a>
+      </h2>
+<div id="point_encode">
+<section id="section-4.1">
+        <h3 id="name-curve-point-encoding">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-curve-point-encoding" class="section-name selfRef">Curve Point encoding</a>
+        </h3>
+<p id="section-4.1-1">Elliptic curve points <span class="bcp14">MUST</span> be encoded in compressed form, so that the commitment can fit inside the ML-DSA context string (of maximum length 255 bytes).
+To unify the implementation, the same point encoding is used at every step of the algorithm, even if no size constraints apply.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">Point compression consists in storing only the x-coordinate of a point, with an additional byte at the first position of the encoding set to <code>0x02</code> (resp. <code>0x03</code>) if its y-coordinate is positive (resp. negative).
+We refer to <span>[<a href="#SEC1" class="cite xref">SEC1</a>]</span> (sections 2.3.3 and 2.3.4) for a formal description of point compression.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">Scalar (also called field element) are encoded to bytes following sections 2.3.5 to 2.3.8 of <span>[<a href="#SEC1" class="cite xref">SEC1</a>]</span>.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="serializepublickey-and-deserializepublickey">
+<section id="section-4.2">
+        <h3 id="name-serializepublickey-and-dese">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-serializepublickey-and-dese" class="section-name selfRef">SerializePublicKey and DeserializePublicKey</a>
+        </h3>
+<p id="section-4.2-1">The serialization routine for public keys performs encoding of the EC-Schnorr public point, and then concatenates the ML-DSA public key with the encoded point.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.2-2">
+<pre>
+Silithium&lt;OID&gt;.SerializePublicKey(mldsaPK, P) -&gt; bytes
+
+Explicit inputs:
+
+  mldsaPK The ML-DSA public key, which is bytes.
+
+  P       The EC-Schnorr public key, a point on the Curve.
+
+Implicit inputs mapped from &lt;OID&gt;:
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  bytes   The encoded Silithium public key.
+
+Serialization Process:
+
+  1. Encode P using compressed encoding.
+
+    encP = Curve.Compress(P)
+
+  2. Combine and output the encoded public key
+
+    output mldsaPK || encP
+</pre><a href="#section-4.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.2-3">Deserialization reverses this process.
+This function depends on the underlying variant of ML-DSA, as the length of <code>mldsaPK</code> varies across parameter sets.
+Values for <code>ML-DSA.PKLen</code> are listed in <a href="#tab-mldsa-sizes" class="auto internal xref">Table 2</a>.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.2-4">
+<pre>
+Silithium&lt;OID&gt;.DeserializePublicKey(bytes) -&gt; (mldsaPK, P)
+
+Explicit inputs:
+
+  bytes    An encoded Silithium public key.
+
+Implicit inputs mapped from &lt;OID&gt;:
+
+  ML-DSA  The underlying ML-DSA algorithm and
+          parameter set to use, for example "ML-DSA-65".
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  mldsaPK The ML-DSA public key, which is bytes.
+
+  P  The EC-Schnorr public key, a point on the Curve.
+
+Deserialization Process:
+
+  1. Split the Silithium public key into both components
+    mldsaPK = bytes[:ML-DSA.PKLen]
+    encP = bytes[ML-DSA.PKLen:]
+
+  2. Decode P using compressed encoding.
+    P = Curve.Decompress(encP)
+
+  3. Output the decoded public key
+
+    output (mldsaPK, P)
+</pre><a href="#section-4.2-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="serialize-privkey">
+<section id="section-4.3">
+        <h3 id="name-serializeprivatekey-and-des">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-serializeprivatekey-and-des" class="section-name selfRef">SerializePrivateKey and DeserializePrivateKey</a>
+        </h3>
+<p id="section-4.3-1">The serialization routine for private keys performs encoding of the private scalar, and then concatenates the ML-DSA private seed with the encoded scalar.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3-2">
+<pre>
+Silithium.SerializePrivateKey(mldsaSeed, d) -&gt; bytes
+
+Explicit inputs:
+
+  mldsaSeed The ML-DSA private key, which is the bytes of the seed.
+
+  d         The secret scalar.
+
+Implicit inputs:
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  bytes   The encoded Silithium private key.
+
+Serialization Process:
+
+  1. Encode d with fixed-length encoding defined by the Curve.
+
+    encd = ScalarEncode(d)
+
+  2. Combine and output the encoded private key
+
+    output mldsaSeed || encd
+</pre><a href="#section-4.3-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.3-3">Deserialization reverses this process. This function does not depend on the ML-DSA variant, because the length of <code>mldsaSeed</code> is fixed across all parameter sets.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3-4">
+<pre>
+Silithium.DeserializePrivateKey(bytes) -&gt; (mldsaSeed, d)
+
+Explicit inputs:
+
+  bytes      An encoded Silithium private key.
+
+Implicit inputs:
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  mldsaSeed The ML-DSA private key, which is the bytes of the seed.
+
+  d         The private scalar.
+
+Deserialization Process:
+
+  1. Split the Silithium private key into both components
+
+    mldsaSeed = bytes[:32]
+    encd = bytes[32:]
+
+  2. Decode d as a scalar
+
+    d = ScalarDecode(encd)
+
+  3. Output the decoded private key
+
+    output (mldsaSeed, d)
+</pre><a href="#section-4.3-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="serializesignaturevalue-and-deserializesignaturevalue">
+<section id="section-4.4">
+        <h3 id="name-serializesignaturevalue-and">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-serializesignaturevalue-and" class="section-name selfRef">SerializeSignatureValue and DeserializeSignatureValue</a>
+        </h3>
+<p id="section-4.4-1">The serialization routine encodes the <code>x</code> component of the EC-Schnorr signature (which is a scalar), and concatenates its encoding with the ML-DSA signature.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.4-2">
+<pre>
+Silithium.SerializeSignatureValue(mldsaSig, x) -&gt; bytes
+
+Explicit inputs:
+
+  mldsaSig The ML-DSA signature value, which is bytes.
+
+  x        The scalar component of the EC-Schnorr signature.
+
+Implicit inputs:
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  bytes   The encoded Silithium signature value.
+
+Serialization Process:
+
+  1. Encode x with fixed-length encoding defined by the Curve.
+
+    encx = ScalarEncode(x)
+
+  2. Combine and output the encoded private key
+
+    output mldsaSig || encx
+</pre><a href="#section-4.4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.4-3">Deserialization reverses this process. Furthermore, it extracts the component <code>c</code> of the ML-DSA signature to allow its independent reuse.
+This function depends on the underlying variant of ML-DSA, as the length of <code>mldsaSig</code> varies across parameter sets.
+Values for <code>ML-DSA.SigLen</code> and <code>ML-DSA.cLen</code> are listed in <a href="#tab-mldsa-sizes" class="auto internal xref">Table 2</a>.<a href="#section-4.4-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.4-4">
+<pre>
+Silithium&lt;OID&gt;.DeserializeSignatureValue(bytes) -&gt; (mldsaSig, x)
+
+Explicit inputs:
+
+  bytes    An encoded Silithium signature value.
+
+Implicit inputs mapped from &lt;OID&gt;:
+
+  ML-DSA  The underlying ML-DSA algorithm and
+          parameter set to use, for example "ML-DSA-65".
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  c         The challenge component of the EC-Schnorr signature.
+
+  x         The scalar component of the EC-Schnorr signature.
+
+  mldsaSig  The ML-DSA signature value, which is bytes.
+
+Deserialization Process:
+
+  1. Split the Silithium signature into all components.
+    mldsaSig = bytes[:ML-DSA.SigLen]
+    encx = bytes[ML-DSA.SigLen:]
+    encc = mldsaSig[:ML-DSA.cLen]
+
+  2. Decode x and c as a scalar.
+    x = Curve.ScalarDecode(encx)
+    c = Curve.ScalarDecode(encc)
+
+  3. Output the decoded signature.
+
+    output (c, x, mldsaSig)
+</pre><a href="#section-4.4-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="serializecommitment">
+<section id="section-4.5">
+        <h3 id="name-serializecommitment">
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-serializecommitment" class="section-name selfRef">SerializeCommitment</a>
+        </h3>
+<p id="section-4.5-1">The EC-Schnorr nonce <code>R</code> (a point on the Curve) is serialized together with the EC-Schnorr public key <code>P</code> (a point on the Curve) as a context string, later passed on to the ML-DSA signature function. As discussed in <a href="#point_encode" class="auto internal xref">Section 4.1</a>, compressed encoding is used, such that the resulting bytes string fits under the maximum length of 255 bytes for all parameter sets.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.5-2">
+<pre>
+Silithium.SerializeCommitment(R, P) -&gt; bytes
+
+Explicit inputs:
+
+  R   The EC-Schnorr nonce, a point on the Curve.
+
+  P   The EC-Schnorr public key, a point on the Curve.
+
+Implicit inputs:
+
+  Curve   The underlying elliptic curve, for instance "P256" or "P-384".
+
+Output:
+
+  bytes   The encoded commitment.
+
+Serialization Process:
+
+  1. Encode R and P using compressed encoding.
+
+    encR = Curve.Compress(R)
+    encP = Curve.Compress(P)
+
+  2. Combine and output the encoded commitment.
+
+    output encR || encP
+</pre><a href="#section-4.5-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.5-3">There is no need to reverse this process.<a href="#section-4.5-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="algorithm-identifiers-and-parameters">
+<section id="section-5">
+      <h2 id="name-algorithm-identifiers-and-p">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-algorithm-identifiers-and-p" class="section-name selfRef">Algorithm Identifiers and Parameters</a>
+      </h2>
+<p id="section-5-1">This section lists the algorithm identifiers and parameters for all Silithium variants.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">Only one parameter set per security level is defined to keep the overall number of combinations within a reasonable limit.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1">
+          <p id="section-5-3.1.1">id-Silithium44-P-256<a href="#section-5-3.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.1.2.1">
+              <p id="section-5-3.1.2.1.1">OID: <strong>TODO</strong><a href="#section-5-3.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-5-3.1.2.2">
+              <p id="section-5-3.1.2.2.1">ML-DSA variant: ML-DSA-44<a href="#section-5-3.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-5-3.1.2.3">
+              <p id="section-5-3.1.2.3.1">Curve: P-256<a href="#section-5-3.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="section-5-3.2">
+          <p id="section-5-3.2.1">id-Silithium65-P-384<a href="#section-5-3.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.2.2.1">
+              <p id="section-5-3.2.2.1.1">OID: <strong>TODO</strong><a href="#section-5-3.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-5-3.2.2.2">
+              <p id="section-5-3.2.2.2.1">ML-DSA variant: ML-DSA-65<a href="#section-5-3.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-5-3.2.2.3">
+              <p id="section-5-3.2.2.3.1">Curve: P-384<a href="#section-5-3.2.2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="section-5-3.3">
+          <p id="section-5-3.3.1">id-Silithium87-P-521<a href="#section-5-3.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5-3.3.2.1">
+              <p id="section-5-3.3.2.1.1">OID: <strong>TODO</strong><a href="#section-5-3.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-5-3.3.2.2">
+              <p id="section-5-3.3.2.2.1">ML-DSA variant: ML-DSA-87<a href="#section-5-3.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-5-3.3.2.3">
+              <p id="section-5-3.3.2.3.1">Curve: P-521<a href="#section-5-3.3.2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+      </ul>
+</section>
+</div>
+<div id="sec-considerations">
+<section id="section-6">
+      <h2 id="name-security-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-6-1">This section brushes over the security properties of Silithium.
+More detailed proofs and reductions can be found in <span>[<a href="#DGR26" class="cite xref">DGR26</a>]</span>.
+This section also explains the differences in security introduced by the variant considered in this specification.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="dgr-changes">
+<section id="section-6.1">
+        <h3 id="name-changes-with-respect-to-the">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-changes-with-respect-to-the" class="section-name selfRef">Changes with respect to the published version of Silithium</a>
+        </h3>
+<p id="section-6.1-1">The original scheme from <span>[<a href="#DGR26" class="cite xref">DGR26</a>]</span>, which we dub Silithium-DGR to avoid ambiguity, is similar to the one presented here, except that it replaces <code>tr = H(vkPQ)</code> with <code>tr' = H(vkT, vkPQ)</code>, which is then used to derive <code>mu = H(tr('), R, M)</code>. Contrary to this variant, no specific context string is necessary, but could be introduced for the sake of domain separation.
+To avoid reimplementing the whole scheme, Silithium-DGR relies on either an implementation of ML-DSA providing the external-mu variant or by modifying its secret key.
+Silithium-DGR can be used both in backward compatibility and interoperability mode securely at the same time with ECDSA as the traditional component and ML-DSA as the post-quantum component.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2">As neither external mu nor updating the signing key may be available, Silithium puts the updated data inside the context string of ML-DSA instead of its signing key.
+The resulting scheme can be implemented using any ML-DSA implementation and has the following security properties, detailed in the following sections.<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.1-3.1">
+            <p id="section-6.1-3.1.1">Unforgeability: breaking Silithium is equivalent to breaking ML-DSA <em>and</em> the discrete logarithm problem.<a href="#section-6.1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.1-3.2">
+            <p id="section-6.1-3.2.1">Strong unforgeability: finding a new signature for an already signed message is equivalent to doing the same for ML-DSA.<a href="#section-6.1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.1-3.3">
+            <p id="section-6.1-3.3.1">Backward compatibility: Silithium can be securely used in backward compatibility mode with ECDSA, in the sense that unforgeability for the two schemes is still guaranteed.<a href="#section-6.1-3.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.1-3.4">
+            <p id="section-6.1-3.4.1">Interoperability: Silithium can be securely used in interoperability mode with ML-DSA, with the restriction that the application <span class="bcp14">MUST NOT</span> allow the user to set arbitrary context strings.<a href="#section-6.1-3.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-6.1-4"></p>
+<p id="section-6.1-5">The following sections give rationale about the aforementioned security claims.<a href="#section-6.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="unforgeability">
+<section id="section-6.2">
+        <h3 id="name-unforgeability">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-unforgeability" class="section-name selfRef">Unforgeability</a>
+        </h3>
+<p id="section-6.2-1">Silithium satisfies the standard unforgeability security notion as long as either ML-DSA does so <em>or</em> discrete logarithm is a hard problem.
+Indeed, to forge a signature, an adversary must simultaneously forge a ML-DSA signature as well as respond correctly to a Schnorr challenge.
+As long as one of the two is a difficult problem, then forging a Silithium signature is also hard.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2-2">This also means that the nature of the unforgeability of Silithium changes if one of the two is broken:<a href="#section-6.2-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.2-3.1">
+            <p id="section-6.2-3.1.1">If discrete logarithm is broken, e.g. with a quantum computer, then Silithium is as secure as ML-DSA.<a href="#section-6.2-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.2-3.2">
+            <p id="section-6.2-3.2.1">If ML-DSA is broken, then Silithium remains secure against classical adversaries, as long as the discrete logarithm problem is.<a href="#section-6.2-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="strong-unforgeability">
+<section id="section-6.3">
+        <h3 id="name-strong-unforgeability">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-strong-unforgeability" class="section-name selfRef">Strong Unforgeability</a>
+        </h3>
+<p id="section-6.3-1">Theorem 2 in <span>[<a href="#DGR26" class="cite xref">DGR26</a>]</span> shows that signing a message for which a signature is already known for Silithium-DGR is as hard to do as for ML-DSA.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2">This result remains true for Silithium. In order to forge another signature for an already signed message, an adversary could:<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.3-3.1">
+            <p id="section-6.3-3.1.1">Use another traditional nonce <code>R'</code>. In that case, the (message, context) signed by ML-DSA changes, and the adversary must break ML-DSA to complete its forgery.<a href="#section-6.3-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.3-3.2">
+            <p id="section-6.3-3.2.1">Find another <code>x' != x</code> such that <code>[x]G - [c]P = [x']G - [c]P</code>. This is actually impossible to do, as Silithium checks that <code>x</code> lies in a domain where no such <code>x'</code> exists.<a href="#section-6.3-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.3-3.3">
+            <p id="section-6.3-3.3.1">Find another ML-DSA signature for the same (message, context) pair. Assuming that this new signature contains the same challenge <code>c</code> as the genuine signature,
+this allows to recycle the traditional component that is part of the Silithium signature without changes,
+while still obtaining a fresh signature, as the other part of the ML-DSA signature is fresh.<a href="#section-6.3-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-6.3-4">Out of the three attack paths, the second one is impossible, and the first and third ones require breaking the (strong) unforgeability of ML-DSA.
+As such, with respect to strong unforgeability, Silithium is at least as hard to break as ML-DSA.<a href="#section-6.3-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="backward-compatibility-mode-with-ecdsa">
+<section id="section-6.4">
+        <h3 id="name-backward-compatibility-mode">
+<a href="#section-6.4" class="section-number selfRef">6.4. </a><a href="#name-backward-compatibility-mode" class="section-name selfRef">Backward compatibility mode with ECDSA</a>
+        </h3>
+<p id="section-6.4-1">As a starting point, it was proven in <span>[<a href="#DGR26" class="cite xref">DGR26</a>]</span> that Silithium-DGR can be used simultaneously in backward compatibility and interoperability mode with ECDSA and ML-DSA, respectively.<a href="#section-6.4-1" class="pilcrow">¶</a></p>
+<p id="section-6.4-2">Does the knowledge of multiple (message, signature) pairs for both Silithium and ECDSA help forge signatures for either of them, when ECDSA uses a keypair that is a subset of a Silithium keypair?<a href="#section-6.4-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.4-3.1">
+            <p id="section-6.4-3.1.1">Each of these two signature schemes is unforgeable when used alone, the remaining question being whether concurrent usage creates undesirable interactions.<a href="#section-6.4-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.4-3.2">
+            <p id="section-6.4-3.2.1">The two signature schemes are relying on different hash functions and different paradigms.<a href="#section-6.4-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-6.4-4">The only attack path to leverage this additional information is a key-recovery attack on one of the schemes in order to use the recovered key to attack the second one.
+However, key-recovery on either of the two schemes is a difficult problem, harder than directly forging, making this attack path impractical.<a href="#section-6.4-4" class="pilcrow">¶</a></p>
+<p id="section-6.4-5">As such, Silithium used in backward compatibility mode with ECDSA is secure, both classically and quantumly.<a href="#section-6.4-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-interop">
+<section id="section-6.5">
+        <h3 id="name-interoperability-mode-with-">
+<a href="#section-6.5" class="section-number selfRef">6.5. </a><a href="#name-interoperability-mode-with-" class="section-name selfRef">Interoperability mode with ML-DSA</a>
+        </h3>
+<p id="section-6.5-1">The changes introduced in Silithium with respect to Silithium-DGR have an impact here.
+Indeed, Silithium integrates an ML-DSA signature as part of its signature.
+An adversary can extract this signature, giving a valid ML-DSA signature that was not produced by the ML-DSA signer.<a href="#section-6.5-1" class="pilcrow">¶</a></p>
+<p id="section-6.5-2">Conversely, the ML-DSA signer can be used to produce Silithium signatures. The adversary still has to break the discrete logarithm problem to complete the signing algorithm of Silithium, which is possible for a quantum adversary. Hence, under these hypotheses:<a href="#section-6.5-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.5-3.1">
+            <p id="section-6.5-3.1.1">the standalone ML-DSA instance is not secure, as an adversary is able to use Silithium signatures to produce valid ML-DSA signatures,<a href="#section-6.5-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.5-3.2">
+            <p id="section-6.5-3.2.1">Silithium has degraded security against quantum adversaries.<a href="#section-6.5-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-6.5-4">Noting that Silithium uses a specific context string when calling ML-DSA, the applicative layer can:<a href="#section-6.5-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6.5-5.1">
+            <p id="section-6.5-5.1.1">disallow ML-DSA verification on user-provided context string,<a href="#section-6.5-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-6.5-5.2">
+            <p id="section-6.5-5.2.1">disallow ML-DSA signing on user-provided context string.<a href="#section-6.5-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-6.5-6">Each of the above points answers its corresponding security concern.
+Assuming that in interoperability mode ML-DSA has a restricted set of context string it can produce and verify signatures on, these attacks do no longer work.
+Under these two hypotheses on the applicative layer, a security level similar to Silithium-DGR is attained: Silithium can securely be used in interoperability mode with ML-DSA.<a href="#section-6.5-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="potential-changes">
+<section id="section-7">
+      <h2 id="name-potential-changes">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-potential-changes" class="section-name selfRef">Potential Changes</a>
+      </h2>
+<div id="append-r-to-the-message">
+<section id="section-7.1">
+        <h3 id="name-append-r-to-the-message">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-append-r-to-the-message" class="section-name selfRef">Append R to the message</a>
+        </h3>
+<p id="section-7.1-1">In this proposal, the commitment <code>R</code> is passed to ML-DSA as part of its context.
+It could be instead passed to ML-DSA as part of the message to sign, by appending it at the end of <code>M</code> using the external-mu feature of <span>[<a href="#FIPS.204" class="cite xref">FIPS.204</a>]</span>.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">In that case, the security of the interoperability mode is improved. On one hand, the message is now appended with a suffix that is impredictible for the adversary, which could make the signed message useless for the adversary. On the other hand, the context string is fixed once the public key is known, which makes it easier to identify potential ML-DSA signatures extracted from a Silithium signature.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+<p id="section-7.1-3">This option is currently left out due to implementations considerations. As ML-DSA is not a streaming signature algorithm, appending the commitment <code>R</code> to the message <code>M</code> before signing would require a new memory allocation whose size is not predictable, and this would not be suitable for devices with memory constraints.<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="user-context">
+<section id="section-7.2">
+        <h3 id="name-user-defined-context-string">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-user-defined-context-string" class="section-name selfRef">User-defined context string</a>
+        </h3>
+<p id="section-7.2-1">As outlined in precedent sections, Silithium uses at most 2 * 66 = 132 bytes of ML-DSA context string to incorporates the EC-Schnorr public key and nonce. This leaves 123 bytes of available space, as the maximum length of ML-DSA context string is 255 bytes. It could hence be possible to define a Silithium variant that takes as input a user-defined context string, with a maximum length of 123 bytes.
+If a longer context string is desirable, note that the previous modification frees 66 bytes of context.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="silithium-dgr">
+<section id="section-7.3">
+        <h3 id="name-silithium-dgr">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-silithium-dgr" class="section-name selfRef">Silithium-DGR</a>
+        </h3>
+<p id="section-7.3-1">As discussed in <a href="#dgr-changes" class="auto internal xref">Section 6.1</a> this proposal made the choice to introduce a variant of the Silithium-DGR scheme in order to be implementable in any context and not require the external-mu variant of ML-DSA.
+This comes at the cost of additional assumptions made on the applicative layer in order to ensure interoperability security, as discussed in <a href="#sec-interop" class="auto internal xref">Section 6.5</a>.
+If the other trade-off is more desirable, this proposal could be changed back to the original Silithium-DGR scheme.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-8">
+      <h2 id="name-iana-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-8-1">This document has no IANA actions.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="implementation-considerations">
+<section id="section-9">
+      <h2 id="name-implementation-consideratio">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-implementation-consideratio" class="section-name selfRef">Implementation considerations</a>
+      </h2>
+<p id="section-9-1">Silithium uses ML-DSA (a FIPS approved algorithm) as a black-box, enabling the reuse of existing FIPS certified implementations.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<p id="section-9-2">The <code>Curve.RandomPoint()</code>, which outputs <code>(d, P)</code> such that <code>P = [d]G</code>, is not specified in this document. Its output is exactly the same as what would be produced by a key generation algorithm for most schemes based on elliptic curves, as for example ECDSA. Even though Silithium is not built on ECDSA, it is entirely possible to reuse the key generation algorithm of ECDSA as <code>Curve.RandomPoint()</code>, if such function is available.<a href="#section-9-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="FIPS.204">[FIPS.204]</dt>
+        <dd>
+<span class="refAuthor">National Institute of Standards and Technology (NIST)</span>, <span class="refTitle">"Module-Lattice-Based Digital Signature Standard"</span>, <span class="seriesInfo">FIPS PUB 204</span>, <time datetime="2024-08" class="refDate">August 2024</time>, <span>&lt;<a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.204.pdf">https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.204.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5480">[RFC5480]</dt>
+        <dd>
+<span class="refAuthor">Turner, S.</span>, <span class="refAuthor">Brown, D.</span>, <span class="refAuthor">Yiu, K.</span>, <span class="refAuthor">Housley, R.</span>, and <span class="refAuthor">T. Polk</span>, <span class="refTitle">"Elliptic Curve Cryptography Subject Public Key Information"</span>, <span class="seriesInfo">RFC 5480</span>, <span class="seriesInfo">DOI 10.17487/RFC5480</span>, <time datetime="2009-03" class="refDate">March 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc5480">https://www.rfc-editor.org/rfc/rfc5480</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6090">[RFC6090]</dt>
+        <dd>
+<span class="refAuthor">McGrew, D.</span>, <span class="refAuthor">Igoe, K.</span>, and <span class="refAuthor">M. Salter</span>, <span class="refTitle">"Fundamental Elliptic Curve Cryptography Algorithms"</span>, <span class="seriesInfo">RFC 6090</span>, <span class="seriesInfo">DOI 10.17487/RFC6090</span>, <time datetime="2011-02" class="refDate">February 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6090">https://www.rfc-editor.org/rfc/rfc6090</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SEC1">[SEC1]</dt>
+        <dd>
+<span class="refAuthor">Certicom Research</span>, <span class="refTitle">"SEC 1: Elliptic Curve Cryptography"</span>, <time datetime="2009-05" class="refDate">May 2009</time>, <span>&lt;<a href="https://www.secg.org/sec1-v2.pdf">https://www.secg.org/sec1-v2.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SEC2">[SEC2]</dt>
+      <dd>
+<span class="refAuthor">Certicom Research</span>, <span class="refTitle">"SEC 2: Recommended Elliptic Curve Domain Parameters"</span>, <time datetime="2010-01" class="refDate">January 2010</time>, <span>&lt;<a href="https://www.secg.org/sec2-v2.pdf">https://www.secg.org/sec2-v2.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="ANSSI2024">[ANSSI2024]</dt>
+        <dd>
+<span class="refAuthor">French Cybersecurity Agency (ANSSI)</span>, <span class="refAuthor">Federal Office for Information Security (BSI)</span>, <span class="refAuthor">Netherlands National Communications Security Agency (NLNCSA)</span>, and <span class="refAuthor">Swedish National Communications Security Authority, Swedish Armed Forces</span>, <span class="refTitle">"Position Paper on Quantum Key Distribution"</span>, <span>n.d.</span>, <span>&lt;<a href="https://cyber.gouv.fr/sites/default/files/document/Quantum_Key_Distribution_Position_Paper.pdf">https://cyber.gouv.fr/sites/default/files/document/Quantum_Key_Distribution_Position_Paper.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DGR26">[DGR26]</dt>
+        <dd>
+<span class="refAuthor">Devevey, J.</span>, <span class="refAuthor">Guerreau, M.</span>, and <span class="refAuthor">M. Roméas</span>, <span class="refTitle">"Compact, Efficient and Non-separable Hybrid Signatures"</span>, <span class="refContent">Springer Nature Switzerland</span>, <span class="seriesInfo">Lecture Notes in Computer Science pp. 143-177</span>, <span class="seriesInfo">DOI 10.1007/978-3-032-22698-3_5</span>, <span class="seriesInfo">ISBN ["9783032226976", "9783032226983"]</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://doi.org/10.1007/978-3-032-22698-3_5">https://doi.org/10.1007/978-3-032-22698-3_5</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DLOGsig">[DLOGsig]</dt>
+        <dd>
+<span class="refAuthor">ITU-T</span>, <span class="refTitle">"IT Security techniques — Digital signatures with appendix — Part 3: Discrete logarithm based mechanisms"</span>, <span class="seriesInfo">ISO/IEC 14888-3:2018</span>, <time datetime="2018-11" class="refDate">November 2018</time>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.draft-ietf-pquip-hybrid-signature-spectrums-07">[I-D.draft-ietf-pquip-hybrid-signature-spectrums-07]</dt>
+        <dd>
+<span class="refAuthor">Bindel, N.</span>, <span class="refAuthor">Hale, B.</span>, <span class="refAuthor">Connolly, D.</span>, and <span class="refAuthor">F. D</span>, <span class="refTitle">"Hybrid signature spectrums"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-pquip-hybrid-signature-spectrums-07</span>, <time datetime="2025-06-20" class="refDate">20 June 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-pquip-hybrid-signature-spectrums-07">https://datatracker.ietf.org/doc/html/draft-ietf-pquip-hybrid-signature-spectrums-07</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-lamps-pq-composite-sigs">[I-D.ietf-lamps-pq-composite-sigs]</dt>
+        <dd>
+<span class="refAuthor">Ounsworth, M.</span>, <span class="refAuthor">Gray, J.</span>, <span class="refAuthor">Pala, M.</span>, <span class="refAuthor">Klaußner, J.</span>, and <span class="refAuthor">S. Fluhrer</span>, <span class="refTitle">"Composite Module-Lattice-Based Digital Signature Algorithm (ML-DSA) for use in X.509 Public Key Infrastructure"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-lamps-pq-composite-sigs-19</span>, <time datetime="2026-04-21" class="refDate">21 April 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-lamps-pq-composite-sigs-19">https://datatracker.ietf.org/doc/html/draft-ietf-lamps-pq-composite-sigs-19</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9794">[RFC9794]</dt>
+      <dd>
+<span class="refAuthor">Driscoll, F.</span>, <span class="refAuthor">Parsons, M.</span>, and <span class="refAuthor">B. Hale</span>, <span class="refTitle">"Terminology for Post-Quantum Traditional Hybrid Schemes"</span>, <span class="seriesInfo">RFC 9794</span>, <span class="seriesInfo">DOI 10.17487/RFC9794</span>, <time datetime="2025-06" class="refDate">June 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9794">https://www.rfc-editor.org/rfc/rfc9794</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="silithium-and-components-sizes">
+<section id="appendix-A">
+      <h2 id="name-silithium-and-components-si">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-silithium-and-components-si" class="section-name selfRef">Silithium and Components Sizes</a>
+      </h2>
+<span id="name-sizes-in-bytes-of-keys-and-"></span><div id="tab-silithium-sizes">
+<table class="center" id="table-1">
+        <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-sizes-in-bytes-of-keys-and-" class="selfRef">Sizes (in bytes) of keys and signatures of Silithium</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Algorithm</th>
+            <th class="text-left" rowspan="1" colspan="1">SKLen</th>
+            <th class="text-left" rowspan="1" colspan="1">PKLen</th>
+            <th class="text-left" rowspan="1" colspan="1">SigLen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-Silithium44-P-256</td>
+            <td class="text-left" rowspan="1" colspan="1">64</td>
+            <td class="text-left" rowspan="1" colspan="1">1345</td>
+            <td class="text-left" rowspan="1" colspan="1">2452</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-Silithium65-P-384</td>
+            <td class="text-left" rowspan="1" colspan="1">80</td>
+            <td class="text-left" rowspan="1" colspan="1">2001</td>
+            <td class="text-left" rowspan="1" colspan="1">3357</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-Silithium87-P-521</td>
+            <td class="text-left" rowspan="1" colspan="1">98</td>
+            <td class="text-left" rowspan="1" colspan="1">2659</td>
+            <td class="text-left" rowspan="1" colspan="1">4693</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<span id="name-sizes-in-bytes-of-ml-dsa-si"></span><div id="tab-mldsa-sizes">
+<table class="center" id="table-2">
+        <caption>
+<a href="#table-2" class="selfRef">Table 2</a>:
+<a href="#name-sizes-in-bytes-of-ml-dsa-si" class="selfRef">Sizes (in bytes) of ML-DSA signature components</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Algorithm</th>
+            <th class="text-left" rowspan="1" colspan="1">PKLen</th>
+            <th class="text-left" rowspan="1" colspan="1">SigLen</th>
+            <th class="text-left" rowspan="1" colspan="1">challLen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-ML-DSA-44</td>
+            <td class="text-left" rowspan="1" colspan="1">1312</td>
+            <td class="text-left" rowspan="1" colspan="1">2420</td>
+            <td class="text-left" rowspan="1" colspan="1">32</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-ML-DSA-65</td>
+            <td class="text-left" rowspan="1" colspan="1">1952</td>
+            <td class="text-left" rowspan="1" colspan="1">3309</td>
+            <td class="text-left" rowspan="1" colspan="1">48</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-ML-DSA-87</td>
+            <td class="text-left" rowspan="1" colspan="1">2592</td>
+            <td class="text-left" rowspan="1" colspan="1">4627</td>
+            <td class="text-left" rowspan="1" colspan="1">64</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+</section>
+</div>
+<div id="appdx_components">
+<section id="appendix-B">
+      <h2 id="name-component-algorithm-referen">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-component-algorithm-referen" class="section-name selfRef">Component Algorithm Reference</a>
+      </h2>
+<span id="name-ml-dsa-variants-used-in-sil"></span><div id="tab-component-sig-algs">
+<table class="center" id="table-3">
+        <caption>
+<a href="#table-3" class="selfRef">Table 3</a>:
+<a href="#name-ml-dsa-variants-used-in-sil" class="selfRef">ML-DSA variants used in Silithium</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Component Signature Algorithm ID</th>
+            <th class="text-left" rowspan="1" colspan="1">OID</th>
+            <th class="text-left" rowspan="1" colspan="1">Specification</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-ML-DSA-44</td>
+            <td class="text-left" rowspan="1" colspan="1">2.16.840.1.101.3.4.3.17</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <span>[<a href="#FIPS.204" class="cite xref">FIPS.204</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-ML-DSA-65</td>
+            <td class="text-left" rowspan="1" colspan="1">2.16.840.1.101.3.4.3.18</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <span>[<a href="#FIPS.204" class="cite xref">FIPS.204</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">id-ML-DSA-87</td>
+            <td class="text-left" rowspan="1" colspan="1">2.16.840.1.101.3.4.3.19</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <span>[<a href="#FIPS.204" class="cite xref">FIPS.204</a>]</span>
+</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<span id="name-elliptic-curves-used-in-sil"></span><div id="tab-component-curve-algs">
+<table class="center" id="table-4">
+        <caption>
+<a href="#table-4" class="selfRef">Table 4</a>:
+<a href="#name-elliptic-curves-used-in-sil" class="selfRef">Elliptic Curves used in Silithium</a>
+        </caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Elliptic CurveID</th>
+            <th class="text-left" rowspan="1" colspan="1">OID</th>
+            <th class="text-left" rowspan="1" colspan="1">Specification</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">secp256r1</td>
+            <td class="text-left" rowspan="1" colspan="1">1.2.840.10045.3.1.7</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <span>[<a href="#RFC6090" class="cite xref">RFC6090</a>]</span>, <span>[<a href="#SEC2" class="cite xref">SEC2</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">secp384r1</td>
+            <td class="text-left" rowspan="1" colspan="1">1.3.132.0.34</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <span>[<a href="#RFC5480" class="cite xref">RFC5480</a>]</span>, <span>[<a href="#RFC6090" class="cite xref">RFC6090</a>]</span>, <span>[<a href="#SEC2" class="cite xref">SEC2</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">secp521r1</td>
+            <td class="text-left" rowspan="1" colspan="1">1.3.132.0.35</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <span>[<a href="#RFC5480" class="cite xref">RFC5480</a>]</span>, <span>[<a href="#RFC6090" class="cite xref">RFC6090</a>]</span>, <span>[<a href="#SEC2" class="cite xref">SEC2</a>]</span>
+</td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+<p id="appendix-B-3">EC-Schnorr is not used as a black-box algorithm.
+As an informative reference, the EC-SDSA scheme is defined in <span>[<a href="#DLOGsig" class="cite xref">DLOGsig</a>]</span>.<a href="#appendix-B-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-C">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-C-1">We would like to thank Scott Fluhrer (Cisco), John Gray (Entrust) and Thom Wiggers (PQShield) for the useful discussions about Silithium.<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+<p id="appendix-C-2">The structure and content of this document are heavily inspired by <span>[<a href="#I-D.ietf-lamps-pq-composite-sigs" class="cite xref">I-D.ietf-lamps-pq-composite-sigs</a>]</span>.<a href="#appendix-C-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-D">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Julien Devevey</span></div>
+<div dir="auto" class="left"><span class="org">ANSSI</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:julien.devevey@ssi.gouv.fr" class="email">julien.devevey@ssi.gouv.fr</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Maxime Roméas</span></div>
+<div dir="auto" class="left"><span class="org">ANSSI</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:maxime.romeas@ssi.gouv.fr" class="email">maxime.romeas@ssi.gouv.fr</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Morgane Guerreau</span></div>
+<div dir="auto" class="left"><span class="org">PQShield</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:morgane.guerreau@pqshield.com" class="email">morgane.guerreau@pqshield.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
