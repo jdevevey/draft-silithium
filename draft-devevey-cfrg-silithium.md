@@ -85,7 +85,7 @@ informative:
   RFC9794:
   DGR26: DOI.10.1007/978-3-032-22698-3_5
   I-D.ietf-lamps-pq-composite-sigs:
-  I-D.draft-ietf-pquip-hybrid-signature-spectrums-07:
+  RFC9955:
   ANSSI2024:
     title: "Position Paper on Quantum Key Distribution"
     target: https://cyber.gouv.fr/sites/default/files/document/Quantum_Key_Distribution_Position_Paper.pdf
@@ -110,7 +110,7 @@ This document defines Silithium, an augmentation of US NIST Module-Lattice-based
 This results in a digital signature scheme with hybrid security, requiring solving hard lattice problems as well as discrete logarithm in order to forge a signature.
 This augmentation is designed to satisfy regulatory guidelines in certain regions.
 Silithium is strongly unforgeable as long as ML-DSA is.
-Morevoer, Silithium can be used in a backward compatible and interopable manner without hindering security.
+Morevoer, Silithium is safe for key-reuse both with its traditional and post-quantum component.
 
 
 --- middle
@@ -129,8 +129,8 @@ For the latter, even if the mathematical problems underlying their security are 
 Due to the recent nature of post-quantum cryptography and especially post-quantum standards, several European cybersecurity agencies [ANSSI2024] are recommending to hybridize these new standards with traditional cryptography, resulting in PQ/T hybrids.
 These hybrids must be resistant to both classical and quantum attacks, ensuring security as high as the maximum security between post-quantum and traditional cryptography.
 
-Hybridization for signature scheme must be tackled carefully. The role played by signatures in modern protocols and their induced complexity is reinforced by the intrinsic complexity of hybridization. One particular notion that is not covered by the standard unforgeability (EU-CMA) or strong unfogeability (sEU-CMA) security notions for signatures is the reuse of keys between the hybrid signature scheme and its components. In this setting, which should be avoided in general but could also be necessary in some applications for backward compatibility or interoperability reasons, it must not be possible to break down the hybrid signature scheme into its traditional and post-quantum components, and vice-versa.
-Previous works have covered this topic and defined guidelines and desirable notions for hybrid signature schemes {{I-D.draft-ietf-pquip-hybrid-signature-spectrums-07}}.
+Hybridization for signature scheme must be tackled carefully. The role played by signatures in modern protocols and their induced complexity is reinforced by the intrinsic complexity of hybridization. One particular notion that is not covered by the standard unforgeability (EU-CMA) or strong unfogeability (sEU-CMA) security notions for signatures is the reuse of keys between the hybrid signature scheme and its components. In this setting, which should be avoided in general but could also be necessary in some applications, it must not be possible to break down the hybrid signature scheme into its traditional and post-quantum components, and vice-versa.
+Previous works have covered this topic and defined guidelines and desirable notions for hybrid signature schemes {{RFC9955}}.
 
 ## Silithium
 
@@ -143,7 +143,7 @@ While we assume that the developer will have access to an ML-DSA implementation,
 Silithium is designed with the goal of lessening the implementation burden. Assuming elliptic curve addition and multiplication as well as ML-DSA are available, then it can quickly be implemented: signing requires in essence sampling a curve point, signing with ML-DSA and computing one multiplication and one addition modulo the order of the curve.
 
 Silithium offers existential unforgeability (EU-CMA) under hybrid assumptions, i.e. either elliptic curve discrete logarithm or lattice problems are hard, as well as strong existential unforgeability (sEU-CMA) under the assumption that lattice problems are hard, making it fit for most applications.
-It also offers various notions of non-separability (and other beyond unforgeability features), making it resilient to uses (and sometimes missuses) where hybrid keys are split and reused inside their component signature schemes, which could be useful for backward compatibility or interopability reasons.
+It also offers various notions of non-separability (and other beyond unforgeability features), making it resilient to uses (and sometimes misuses) where hybrid keys are split and reused inside their component signature schemes, which could be desirable in some migration scenarios.
 
 # Conventions and Definitions
 
@@ -168,13 +168,10 @@ In addition, the following terminology is used throughout this specification:
           A digital cryptographic signature, making no assumptions
             about which algorithm.
 
-**BACKWARD COMPATIBILITY**:
-  A PQ/T hybrid scheme is used in backward compatibility mode if the traditional component of its keypair
-  is simultaneously used in a traditional algorithm.
+The following new terminology is also introduced:
 
-**INTEROPERABILITY**:
-  A PQ/T hybrid scheme is used in interoperability mode if the post-quantum component of its keypair
-  is simultaneously used in a post-quantum algorithm.
+**KEY-REUSE SAFETY**:
+    A PQ/T scheme is said to be safe for PQ key-reuse if its PQ (resp. traditional) key component can be separately reused in the corresponding PQ (resp. traditional) scheme.
 
 ## Notations
 
@@ -661,7 +658,7 @@ This section also explains the differences in security introduced by the variant
 
 The original scheme from {{DGR26}}, which we dub Silithium-DGR to avoid ambiguity, is similar to the one presented here, except that it replaces `tr = H(vkPQ)` with `tr' = H(vkT, vkPQ)`, which is then used to derive `mu = H(tr('), R, M)`. Contrary to this variant, no specific context string is necessary, but could be introduced for the sake of domain separation.
 To avoid reimplementing the whole scheme, Silithium-DGR relies on either an implementation of ML-DSA providing the external-mu variant or by modifying its secret key.
-Silithium-DGR can be used both in backward compatibility and interoperability mode securely at the same time with ECDSA as the traditional component and ML-DSA as the post-quantum component.
+Silithium-DGR posess key-reuse safety for both ECDSA as the traditional component and ML-DSA as the post-quantum component.
 
 As neither external mu nor updating the signing key may be available, Silithium puts the updated data inside the context string of ML-DSA instead of its signing key.
 The resulting scheme can be implemented using any ML-DSA implementation and has the following security properties, detailed in the following sections.
@@ -670,11 +667,9 @@ The resulting scheme can be implemented using any ML-DSA implementation and has 
 
  - Strong unforgeability: finding a new signature for an already signed message is equivalent to doing the same for ML-DSA.
 
- - Backward compatibility: Silithium can be securely used in backward compatibility mode with ECDSA, in the sense that unforgeability for the two schemes is still guaranteed.
+ - Traditional key-reuse safety: Silithium key can be securely reused with ECDSA, in the sense that unforgeability for the two schemes is still guaranteed.
 
- - Interoperability: Silithium can be securely used in interoperability mode with ML-DSA, with the restriction that the application MUST NOT allow the user to set arbitrary context strings.
-
- <!-- - Interoperability: When used in interoperability mode with ML-DSA, valid ML-DSA signatures can be extracted from Silithium. Assuming a discrete logarithm break, the converse is true. This is mitigated by the use of specific contexts and with the right applicative measures security can be guaranteed. -->
+ - PQ key-reuse safety: Silithium key can be securely reused with ML-DSA, with the restriction that the application MUST NOT allow the user to set arbitrary context strings.
 
 The following sections give rationale about the aforementioned security claims.
 
@@ -708,9 +703,9 @@ Out of the three attack paths, the second one is impossible, and the first and t
 As such, with respect to strong unforgeability, Silithium is at least as hard to break as ML-DSA.
 
 
-## Backward compatibility mode with ECDSA
+## Key-reuse safety with ECDSA
 
-As a starting point, it was proven in {{DGR26}} that Silithium-DGR can be used simultaneously in backward compatibility and interoperability mode with ECDSA and ML-DSA, respectively.
+As a starting point, it was proven in {{DGR26}} that Silithium-DGR can posesses both traditional and post-quantum key reuse safety with ECDSA and ML-DSA respectively.
 
 Does the knowledge of multiple (message, signature) pairs for both Silithium and ECDSA help forge signatures for either of them, when ECDSA uses a keypair that is a subset of a Silithium keypair?
 
@@ -721,9 +716,9 @@ Does the knowledge of multiple (message, signature) pairs for both Silithium and
 The only attack path to leverage this additional information is a key-recovery attack on one of the schemes in order to use the recovered key to attack the second one.
 However, key-recovery on either of the two schemes is a difficult problem, harder than directly forging, making this attack path impractical.
 
-As such, Silithium used in backward compatibility mode with ECDSA is secure, both classically and quantumly.
+As such, Silithium is safe for key-reuse with ECDSA.
 
-## Interoperability mode with ML-DSA {#sec-interop}
+## Key-reuse safety with ML-DSA {#pq-key-reuse}
 
 The changes introduced in Silithium with respect to Silithium-DGR have an impact here.
 Indeed, Silithium integrates an ML-DSA signature as part of its signature.
@@ -742,8 +737,8 @@ Noting that Silithium uses a specific context string when calling ML-DSA, the ap
  - disallow ML-DSA signing on user-provided context string.
 
 Each of the above points answers its corresponding security concern.
-Assuming that in interoperability mode ML-DSA has a restricted set of context string it can produce and verify signatures on, these attacks do no longer work.
-Under these two hypotheses on the applicative layer, a security level similar to Silithium-DGR is attained: Silithium can securely be used in interoperability mode with ML-DSA.
+In the case of key-reuse for standalone ML-DSA where the context string cannot be arbitrarily set by an attacker, these attacks do no longer work.
+Under these two hypotheses on the applicative layer, a security level similar to Silithium-DGR is attained: Silithium keys can securely be reused with ML-DSA.
 
 # Potential Changes
 
@@ -752,7 +747,7 @@ Under these two hypotheses on the applicative layer, a security level similar to
 In this proposal, the commitment `R` is passed to ML-DSA as part of its context.
 It could be instead passed to ML-DSA as part of the message to sign, by appending it at the end of `M` using the external-mu feature of [FIPS.204].
 
-In that case, the security of the interoperability mode is improved. On one hand, the message is now appended with a suffix that is impredictible for the adversary, which could make the signed message useless for the adversary. On the other hand, the context string is fixed once the public key is known, which makes it easier to identify potential ML-DSA signatures extracted from a Silithium signature.
+In that case, the PQ key-reuse safety is improved. On one hand, the message is now appended with a suffix that is impredictible for the adversary, which could make the signed message useless for the adversary. On the other hand, the context string is fixed once the public key is known, which makes it easier to identify potential ML-DSA signatures extracted from a Silithium signature.
 
 This option is currently left out due to implementations considerations. As ML-DSA is not a streaming signature algorithm, appending the commitment `R` to the message `M` before signing would require a new memory allocation whose size is not predictable, and this would not be suitable for devices with memory constraints.
 
@@ -764,7 +759,7 @@ If a longer context string is desirable, note that the previous modification fre
 ## Silithium-DGR
 
 As discussed in {{dgr-changes}} this proposal made the choice to introduce a variant of the Silithium-DGR scheme in order to be implementable in any context and not require the external-mu variant of ML-DSA.
-This comes at the cost of additional assumptions made on the applicative layer in order to ensure interoperability security, as discussed in {{sec-interop}}.
+This comes at the cost of additional assumptions made on the applicative layer in order to ensure PQ key-reuse safety, as discussed in {{pq-key-reuse}}.
 If the other trade-off is more desirable, this proposal could be changed back to the original Silithium-DGR scheme.
 
 # IANA Considerations
