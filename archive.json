@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-07-23T02:13:34.958575+00:00",
+  "timestamp": "2026-07-26T02:14:41.869825+00:00",
   "repo": "jdevevey/draft-silithium",
   "labels": [
     {
@@ -50,5 +50,32 @@
     }
   ],
   "issues": [],
-  "pulls": []
+  "pulls": [
+    {
+      "number": 1,
+      "id": "PR_kwDOTPC_Qc715UdJ",
+      "title": "Fixed inconsistent terminology with RFC9955",
+      "url": "https://github.com/jdevevey/draft-silithium/pull/1",
+      "state": "OPEN",
+      "author": "mguerrea",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "The notions of \"backward-compatibility\" and \"interoperability\" have been replaced by \"key-reuse safety\" (with PQ and traditional variant) to avoid any collisions with the terminology defined in RFC9955.",
+      "createdAt": "2026-07-24T14:23:11Z",
+      "updatedAt": "2026-07-24T14:23:11Z",
+      "baseRepository": "jdevevey/draft-silithium",
+      "baseRefName": "main",
+      "baseRefOid": "7f6aa66a6427515c3545a5ca5981c76ca60d8512",
+      "headRepository": "jdevevey/draft-silithium",
+      "headRefName": "terminology-fix",
+      "headRefOid": "90eb83ce9a8a3015ca4d8aac19eedf27cc417869",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    }
+  ]
 }
