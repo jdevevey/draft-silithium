@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-09-15T03:01:19.143810+00:00",
+  "timestamp": "2026-09-17T03:01:16.771568+00:00",
   "repo": "jdevevey/draft-silithium",
   "labels": [
     {
@@ -49,7 +49,24 @@
       "color": "ffffff"
     }
   ],
-  "issues": [],
+  "issues": [
+    {
+      "number": 2,
+      "id": "I_kwDOTPC_Qc8AAAABRZAPXA",
+      "title": "ML-DSA ctx should be prefixed by a domain-separation string",
+      "url": "https://github.com/jdevevey/draft-silithium/issues/2",
+      "state": "OPEN",
+      "author": "falko-strenzke",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "First of all thanks for your work on this valuable proposal. I have only a small suggetsion. \n\nAs a best effort to keep signatures in different protocols from being interchangeable, I suggest to introduce a static prefix to the ML-DSA ctx in your scheme. This may not be needed for your signature scheme, but other schemes (with no or or too short prefixes) may benefit from this. To cover also protocols that might use suffixes for domain separation, you might also want to consider appending a short static suffix.",
+      "createdAt": "2026-09-15T12:43:03Z",
+      "updatedAt": "2026-09-15T12:43:03Z",
+      "closedAt": null,
+      "comments": []
+    }
+  ],
   "pulls": [
     {
       "number": 1,
